@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Deutsch Übung">
+<title>Deutsch Übungssatz 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600&family=Fira+Sans+Condensed:wght@700&display=swap">
+<style>
+/* Layout: single centered column, title then two large section buttons */
+:root {
+  --bg: #eef0ee;
+  --paper: #fbfcfb;
+  --ink: #1d2320;
+  --muted: #5c6661;
+  --band: #b9bfbb;
+  --line: #d5dad7;
+  --accent: #1f7a3d;
+  --font-body: "Fira Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Fira Sans Condensed", "Fira Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #121614; --paper: #1b201d; --ink: #e8ece9; --muted: #9ba59f; --band: #353c38; --line: #2f3632; --accent: #5cc47c; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.45;
+  -webkit-tap-highlight-color: transparent;
+}
+.wrap {
+  max-width: 480px; margin: 0 auto; min-height: 100vh;
+  display: flex; flex-direction: column; justify-content: center; gap: 28px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: calc(32px + env(safe-area-inset-top, 0px)) calc(32px + env(safe-area-inset-bottom, 0px));
+}
+.eyebrow { font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 4px 0 6px; font-family: var(--font-display); font-size: 34px; line-height: 1.05; text-wrap: balance; }
+.lead { margin: 0; color: var(--muted); }
+.choices { display: grid; gap: 14px; }
+.choice {
+  display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 14px;
+  padding: 18px 16px; border-radius: 16px; text-decoration: none; color: var(--ink);
+  background: var(--paper); border: 1.5px solid var(--line);
+  transition: border-color .15s, transform .15s;
+}
+.choice:active { transform: scale(.98); }
+.choice:hover, .choice:focus-visible { border-color: var(--accent); outline: none; }
+.icon { width: 52px; height: 52px; border: 1.5px solid var(--ink); border-radius: 6px; display: grid; place-items: center; background: var(--band); }
+.choice strong { display: block; font-family: var(--font-display); font-size: 24px; line-height: 1.1; }
+.choice span.meta { font-size: 14px; color: var(--muted); }
+.arrow { font-size: 22px; color: var(--accent); font-weight: 600; }
+footer { font-size: 13px; color: var(--muted); text-align: center; }
+@media (prefers-reduced-motion: reduce) { .choice { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Übungssatz 1</div>
+    <h1>Deutsch-Prüfung üben</h1>
+    <p class="lead">Wählen Sie einen Prüfungsteil. Am Ende sehen Sie, wie viele Antworten richtig und falsch sind.</p>
+  </header>
+
+  <nav class="choices">
+    <a class="choice" href="hoeren.html">
+      <span class="icon" aria-hidden="true"><svg width="22" height="26" viewBox="0 0 18 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7a5 5 0 0 1 10 0c0 3-3 4-3 7a3 3 0 0 1-5 2"/><path d="M7 7a2 2 0 0 1 4 0c0 1.5-1.5 2-1.5 3.5"/></svg></span>
+      <span><strong>Hören</strong><span class="meta">25 Minuten · Teil 1–4 · 20 Aufgaben</span></span>
+      <span class="arrow" aria-hidden="true">›</span>
+    </a>
+    <a class="choice" href="lesen.html">
+      <span class="icon" aria-hidden="true"><svg width="26" height="18" viewBox="0 0 20 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 7s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="10" cy="7" r="2.6"/></svg></span>
+      <span><strong>Lesen</strong><span class="meta">45 Minuten · Teil 1–5 · 25 Aufgaben</span></span>
+      <span class="arrow" aria-hidden="true">›</span>
+    </a>
+  </nav>
+
+  <footer>Tipp: In Safari „Teilen“ → „Zum Home-Bildschirm“ tippen.</footer>
+</div>
+</body>
+</html>
