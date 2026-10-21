@@ -152,6 +152,23 @@ html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; padding-top: env(safe-area-inset-top, 0px); }
 [hidden] { display: none !important; }
 .home { display: inline-block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: var(--accent); text-decoration: none; }
+/* Sofort-Feedback */
+.opt:disabled { cursor: default; }
+.opt.ok { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.opt.ok .key { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+.opt.bad { border-color: var(--wrong); background: var(--wrong-soft); color: var(--wrong); text-decoration: line-through; }
+.opt.bad .key { background: var(--wrong); border-color: var(--wrong); color: var(--paper); text-decoration: none; }
+.q.locked { opacity: .4; }
+.q.locked .opt { cursor: not-allowed; }
+.msg { font-size: 14px; font-weight: 600; padding: 8px 12px; border-radius: 8px; margin-left: 38px; }
+.msg.ok { background: var(--accent-soft); color: var(--accent); }
+.msg.bad { background: var(--wrong-soft); color: var(--wrong); }
+.q.shake { animation: shake .35s; }
+@keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+.btn:disabled { opacity: .4; cursor: default; }
+.fehler { display: grid; gap: 4px; }
+.none { font-size: 14px; color: var(--accent); font-weight: 600; padding: 6px 0; border-top: 1px solid var(--line); }
+@media (prefers-reduced-motion: reduce) { .q.shake { animation: none; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -257,7 +274,7 @@ const TEILE = [
 
 const ALL = TEILE.flatMap(t => t.questions);
 const LETTERS = "abcdef";
-const answers = {};
+const LAST = TEILE.length - 1;
 let page = 0; // 0..3 = Teile, 4 = Ergebnis
 
 const $ = id => document.getElementById(id);
@@ -269,9 +286,7 @@ function optLabel(q, i) {
 }
 
 function questionHTML(q) {
-  const sel = answers[q.n];
-  const btn = (i, inner, extra = "") =>
-    `<button type="button" class="opt${sel === i ? " sel" : ""}" id="q${q.n}-${i}" data-q="${q.n}" data-i="${i}" aria-pressed="${sel === i}" ${extra}>${inner}</button>`;
+  const btn = (i, inner, extra = "") => optButton(q, i, inner, extra);
   let body;
   if (q.rf) {
     body = `<div class="opts row">${["richtig", "falsch"].map((t, i) => btn(i, t)).join("")}</div>`;
@@ -280,7 +295,7 @@ function questionHTML(q) {
   } else {
     body = `<div class="opts">${q.opts.map((o, i) => btn(i, `<span class="key">${LETTERS[i]}</span><span>${o}</span>`)).join("")}</div>`;
   }
-  return `<div class="q"><div class="q-head"><span class="num">${q.n}</span><span>${q.text}</span></div>${body}</div>`;
+  return `<div class="q ${qState(q)}" id="q${q.n}"><div class="q-head"><span class="num">${q.n}</span><span>${q.text}</span></div>${body}${qMsg(q)}</div>`;
 }
 
 function renderTeil(t) {
@@ -296,80 +311,112 @@ function renderTeil(t) {
   return html;
 }
 
+// Sofort-Feedback: falsche Antwort wird rot und gesperrt, die nächste Aufgabe öffnet erst nach der richtigen Antwort.
+const state = {};
+const st = n => state[n] || (state[n] = { wrong: [], solved: false });
+const firstOpen = () => ALL.find(q => !st(q.n).solved);
+
+function qState(q) {
+  if (st(q.n).solved) return "solved";
+  return firstOpen() === q ? "active" : "locked";
+}
+
+function optButton(q, i, inner, extra) {
+  const s = st(q.n);
+  let cls = "opt";
+  if (s.solved && i === q.answer) cls += " ok";
+  else if (s.wrong.includes(i)) cls += " bad";
+  const off = s.solved || s.wrong.includes(i) || qState(q) === "locked";
+  return `<button type="button" class="${cls}" data-q="${q.n}" data-i="${i}"${off ? " disabled" : ""} ${extra}>${inner}</button>`;
+}
+
+function qMsg(q) {
+  const s = st(q.n);
+  const k = s.wrong.length;
+  if (s.solved) return `<div class="msg ok">✓ Richtig${k ? ` – nach ${k} Fehler${k > 1 ? "n" : ""}` : ""}</div>`;
+  if (k) return `<div class="msg bad" role="alert">✗ Falsch. Versuchen Sie es noch einmal.</div>`;
+  return "";
+}
+
 function renderResult() {
-  let right = 0;
-  ALL.forEach(q => { if (answers[q.n] === q.answer) right++; });
-  const wrong = ALL.length - right;
-  const pct = Math.round(right / ALL.length * 100);
-  const verdict = pct >= 60 ? "Bestanden – gut gemacht!" : "Noch nicht bestanden. Hören Sie die Texte noch einmal.";
+  const totalWrong = ALL.reduce((sum, q) => sum + st(q.n).wrong.length, 0);
+  const firstTry = ALL.filter(q => st(q.n).wrong.length === 0).length;
   let html = `<div class="sheet"><div class="band"><span>Ergebnis</span><small>Übungssatz 1</small>${EAR}</div><div class="inner">
-    <h1>${right} von ${ALL.length} Punkten</h1>
+    <h1>${totalWrong === 0 ? "Alles beim ersten Versuch richtig!" : `${totalWrong}× falsch geantwortet`}</h1>
     <div class="score">
-      <div class="tile ok"><strong>${right}</strong><span>richtig</span></div>
-      <div class="tile bad"><strong>${wrong}</strong><span>falsch</span></div>
+      <div class="tile ok"><strong>${firstTry}</strong><span>beim ersten Versuch richtig</span></div>
+      <div class="tile bad"><strong>${ALL.length - firstTry}</strong><span>Aufgaben mit Fehlern</span></div>
     </div>
-    <p class="verdict">${pct} % · ${verdict}</p>
+    <p class="verdict">${firstTry} von ${ALL.length} Aufgaben ohne Fehler gelöst.</p>
     <div class="review">`;
   TEILE.forEach(t => {
-    html += `<div><h3>${t.title}</h3>`;
-    t.questions.forEach(q => {
-      const a = answers[q.n];
-      const ok = a === q.answer;
-      const given = a === undefined ? "keine Antwort" : optLabel(q, a);
+    const bad = t.questions.filter(q => st(q.n).wrong.length);
+    html += `<div class="fehler"><h3>${t.title}</h3>`;
+    if (!bad.length) html += `<div class="none">✓ Keine Fehler</div>`;
+    bad.forEach(q => {
+      const w = st(q.n).wrong;
       html += `<div class="rv"><span class="num">${q.n}</span><div>
-        <div>${q.match ? q.text : q.text}</div>
-        <div class="ans">Ihre Antwort: <b>${given}</b>${ok ? "" : `<br>Richtig: <b>${optLabel(q, q.answer)}</b>`}</div>
-      </div><span class="mark ${ok ? "ok" : "bad"}">${ok ? "✓ richtig" : "✗ falsch"}</span></div>`;
+        <div>${q.text}</div>
+        <div class="ans">Falsch gewählt: <b>${w.map(i => optLabel(q, i)).join(" · ")}</b></div>
+      </div><span class="mark bad">${w.length}× falsch</span></div>`;
     });
     html += `</div>`;
   });
-  html += `</div></div></div>`;
-  return html;
+  return html + `</div></div></div>`;
 }
 
 function render() {
-  const main = $("main");
-  const done = Object.keys(answers).length;
-  [...$("steps").children].forEach((s, i) => s.classList.toggle("on", i <= Math.min(page, 3)));
-  $("answered").textContent = `${done} / ${ALL.length} beantwortet`;
+  const solved = ALL.filter(q => st(q.n).solved).length;
+  [...$("steps").children].forEach((s, i) => s.classList.toggle("on", i <= Math.min(page, LAST)));
+  $("answered").textContent = `${solved} / ${ALL.length} gelöst`;
   $("back").hidden = page === 0;
+  $("next").disabled = false;
 
-  if (page < 4) {
-    $("stepName").textContent = `Teil ${page + 1} von 4`;
-    main.innerHTML = renderTeil(TEILE[page]);
-    $("next").textContent = page === 3 ? "Abgeben & Ergebnis sehen" : "Weiter";
+  if (page <= LAST) {
+    $("stepName").textContent = `Teil ${page + 1} von ${TEILE.length}`;
+    $("main").innerHTML = renderTeil(TEILE[page]);
+    const pageDone = TEILE[page].questions.every(q => st(q.n).solved);
+    $("next").disabled = !pageDone;
+    $("next").textContent = page === LAST ? "Ergebnis sehen" : "Weiter";
     $("back").textContent = "Zurück";
-    const open = ALL.length - done;
-    $("note").textContent = page === 3 && open > 0
-      ? `${open} Aufgabe${open === 1 ? "" : "n"} noch offen – offene Aufgaben zählen als falsch.`
-      : "";
+    $("note").textContent = pageDone ? "" : "Lösen Sie alle Aufgaben auf dieser Seite, dann geht es weiter.";
   } else {
     $("stepName").textContent = "Ergebnis";
-    main.innerHTML = renderResult();
+    $("main").innerHTML = renderResult();
     $("next").textContent = "Noch einmal";
-    $("back").textContent = "Antworten ansehen";
+    $("back").textContent = "Aufgaben ansehen";
     $("note").textContent = "";
   }
 }
 
 $("main").addEventListener("click", e => {
   const b = e.target.closest(".opt");
-  if (!b || page > 3) return;
-  answers[+b.dataset.q] = +b.dataset.i;
+  if (!b || b.disabled || page > LAST) return;
+  const q = ALL.find(x => x.n === +b.dataset.q);
+  const i = +b.dataset.i;
+  const s = st(q.n);
+  if (i === q.answer) s.solved = true;
+  else s.wrong.push(i);
   const y = window.scrollY;
   render();
   window.scrollTo(0, y);
+  if (!s.solved) {
+    $("q" + q.n).classList.add("shake");
+  } else {
+    const nx = firstOpen();
+    if (nx && TEILE[page].questions.includes(nx)) $("q" + nx.n).scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
 });
 
 $("next").addEventListener("click", () => {
-  if (page === 4) { for (const k in answers) delete answers[k]; page = 0; }
+  if (page > LAST) { for (const k in state) delete state[k]; page = 0; }
   else page++;
   render();
   window.scrollTo(0, 0);
 });
 
 $("back").addEventListener("click", () => {
-  page = page === 4 ? 3 : Math.max(0, page - 1);
+  page = page > LAST ? LAST : Math.max(0, page - 1);
   render();
   window.scrollTo(0, 0);
 });
